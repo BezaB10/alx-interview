@@ -1,24 +1,36 @@
 #!/usr/bin/node
-//  a script that prints all characters of a Star Wars movie Right order
 const request = require('request');
-const url = 'https://swapi-api.hbtn.io/api/films/' + process.argv[2];
 
-request.get(url, function (err, response, body) {
-  if (!err) {
-    const urlchars = JSON.parse(body).characters;
-    const len = urlchars.length;
-    Names(0, urlchars[0], urlchars, len);
-  }
-});
-function Names (i, url, chars, len) {
-  if (i === len) {
-    return;
-  }
-  request.get(url, function (err, response, body) {
-    if (!err) {
-      console.log(JSON.parse(body).name);
-      i++;
-      Names(i, chars[i], chars, len);
+const filmId = process.argv[2];
+
+const url = 'https://swapi-api.hbtn.io/api/films/' + filmId + '/';
+
+function printMovieCharacters (url) {
+  request(url, async function (error, response, body) {
+    if (error) return console.log('An error occurred');
+
+    const characters = JSON.parse(body).characters;
+    if (!characters) return;
+
+    const promises = [];
+
+    for (const ch of characters) {
+      let promise = null;
+
+      promise = new Promise(function (resolve, reject) {
+        request(ch, function (error, response, body) {
+          if (error) return console.log('Error fetching character');
+          resolve(JSON.parse(body).name);
+        });
+      });
+      promises.push(promise);
+    }
+
+    const data = await Promise.all(promises);
+    for (const item of data) {
+      console.log(item);
     }
   });
 }
+
+printMovieCharacters(url);
